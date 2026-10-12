@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Shared clock prototype</title>
+    <style>
+      body {
+        font: 18px system-ui;
+        max-width: 44em;
+        margin: 3em auto;
+        padding: 1em;
+      }
+      #stimulus {
+        font-size: 3em;
+      }
+      pre {
+        white-space: pre-wrap;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Shared clock prototype</h1>
+    <p>Two-client countdown and future reveal. Software observations only.</p>
+    <p id="message">Connecting…</p>
+    <p id="countdown"></p>
+    <div id="stimulus" hidden>★</div>
+    <button id="input" disabled>Practice input</button>
+    <pre id="diagnostics"></pre>
+    <script src="../packages/jspsych/dist/index.browser.js"></script>
+    <script type="module" src="multiplayer-clock.js"></script>
+  </body>
+</html>
