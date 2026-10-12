@@ -204,6 +204,91 @@ async function join(participantId: string, options?: ConnectOptions) {
 
 const code = (code: string) => ({ name: "MultiplayerError", code });
 
+describe("shared clock state transport", () => {
+  test("an adapter without group capability is unsupported, not waiting for membership", async () => {
+    jest.useFakeTimers();
+    const client = await join("a");
+    await flushPromises();
+    const pushes = client.connection.pushes.length;
+    expect(client.api.clock.status()).toMatchObject({
+      state: "unsupported", reason: "sealed_membership_unsupported",
+    });
+    await expect(client.api.clock.ready()).rejects.toMatchObject({ code: "unsupported" });
+    expect(client.connection.pushes).toHaveLength(pushes);
+    expect(jest.getTimerCount()).toBe(0);
+    await client.api.disconnect();
+  });
+
+  test("request IDs stay unique after explicit disconnect/connect on the same page", async () => {
+    jest.useFakeTimers();
+    hub.groups = { size: 2, sealed: true };
+    const a = await join("a"); const b = await join("b");
+    await flushPromises(); await a.api.clock.ready();
+    const first = b.api.clock.ready(); await flushPromises(); await first;
+    const before = b.connection.pushes.map((wire: any) => wire.$clock?.request?.id).filter(Boolean);
+    await b.api.disconnect();
+    const adapter = new MockAdapter(hub, "b");
+    await b.api.connect(adapter); await flushPromises();
+    const second = b.api.clock.ready(); await flushPromises(); await second;
+    const after = adapter.connection.pushes.map((wire: any) => wire.$clock?.request?.id).filter(Boolean);
+    expect(after.length).toBeGreaterThan(0);
+    expect(after.some((id) => before.includes(id))).toBe(false);
+    expect(b.api.clock.status().reference).toEqual(a.api.clock.status().reference);
+    await a.api.disconnect(); await b.api.disconnect();
+  });
+
+  test("combined pushes, retries, and concurrent replace/update preserve clock exchanges", async () => {
+    jest.useFakeTimers();
+    jest.spyOn(console, "warn").mockImplementation(() => {});
+    hub.groups = { size: 2, sealed: true };
+    const a = await join("a");
+    const b = await join("b");
+    await flushPromises();
+    const listener = jest.fn();
+    b.api.subscribe(listener);
+    await a.api.clock.ready();
+    await flushPromises();
+    expect(listener).toHaveBeenCalledTimes(1);
+    const gate = deferred();
+    let calls = 0;
+    b.connection.pushImpl = async (data) => {
+      if (++calls === 1) { await gate.promise; throw new Error("JATOS-like version conflict"); }
+      b.connection.write(data);
+    };
+    const ready = b.api.clock.ready();
+    const writes = [b.api.update({ response: 1 }), b.api.replace({ response: 2 }),
+      b.api.update({ score: 3 }), a.api.update({ question: "trial" })];
+    await flushPromises();
+    gate.resolve(); await flushPromises();
+    jest.advanceTimersByTime(250); await flushPromises();
+    for (let i = 0; i < 20; i++) await flushPromises();
+    await ready; await Promise.all(writes);
+    expect(stored("b")).toEqual({ response: 2, score: 3 });
+    expect(stored("a")).toEqual({ question: "trial" });
+    expect(b.api.get("b")).not.toHaveProperty("$clock");
+    expect(b.api.clock.diagnostics().filter((x) => x.event === "sample")).toHaveLength(5);
+    expect(b.api.clock.status().uncertainty).toBeLessThanOrEqual(50);
+    expect(b.connection.pushes.some((data) => !!data.$clock)).toBe(true);
+    await a.api.disconnect(); await b.api.disconnect();
+  });
+
+  test("clock lifecycle outlives trial subscriptions but closes with its session", async () => {
+    jest.useFakeTimers();
+    hub.groups = { size: 2, sealed: true };
+    const a = await join("a"); const b = await join("b");
+    await flushPromises();
+    await a.api.clock.ready();
+    const ready = b.api.clock.ready(); await flushPromises(); await ready;
+    b.api[timelineHooks].experimentEnded();
+    expect(b.api.clock.status().state).toBe("ready");
+    const clock = b.api.clock;
+    await b.api.disconnect();
+    expect(clock.status().reason).toBe("disconnected");
+    expect(() => b.api.now()).toThrow();
+    await a.api.disconnect();
+  });
+});
+
 describe("connecting and disconnecting", () => {
   test("connect sets participantId and status", async () => {
     const { api } = await join("p1");

@@ -1,5 +1,6 @@
 import autoBind from "auto-bind";
 
+import { ClockWire, MultiplayerClock } from "./clock";
 import { MultiplayerError } from "./errors";
 import { SharedRandom } from "./random";
 import {
@@ -173,6 +174,7 @@ interface SlotMeta extends SessionIdentity {
 
 /** One participant's data, as the session keeps it. */
 interface SlotData {
+  clock?: ClockWire;
   /** The session scope; undefined until they write to it. */
   session?: Record<string, unknown>;
   /** Each trial scope they have written to, by name. */
@@ -205,6 +207,7 @@ function parseSlot(raw: unknown): Slot | null {
     }
   }
   return {
+    clock: isRecord(raw.$clock) ? raw.$clock : undefined,
     meta: {
       v: meta.v,
       instance: meta.instance,
@@ -236,6 +239,34 @@ function assertRecord(data: unknown): asserts data is Record<string, unknown> {
  * later one.
  */
 export class MultiplayerSession {
+  private sharedClock: MultiplayerClock | null = null;
+
+  get clock(): MultiplayerClock {
+    if (!this.sharedClock) {
+      this.sharedClock = new MultiplayerClock({
+        participantId: this.participantId,
+        sessionId: this.sessionId,
+        instance: this.identity.instance,
+        requestEpoch: this.identity.epoch,
+        supportsSealedMembership: typeof this.connection.group === "function",
+        status: () => this.status,
+        group: () => this.group(),
+        presence: () => this.presence(),
+        peers: () =>
+          Object.fromEntries(
+            Object.entries(this.slots).map(([id, slot]) => [
+              id,
+              { instance: slot.meta.instance, clock: slot.clock },
+            ])
+          ),
+        write: (clock) => {
+          if (this.isClosed) return;
+          void this.writeOwn({ ...this.own, clock }, true).catch(() => {});
+        },
+      });
+    }
+    return this.sharedClock;
+  }
   readonly participantId: string;
 
   /** Identifies the group session; the same for every participant in the group. */
@@ -565,8 +596,12 @@ export class MultiplayerSession {
   private write(scope: ScopeName, data: Record<string, unknown>): Promise<void> {
     const next: SlotData =
       scope === null
-        ? { session: data, scopes: this.own.scopes }
-        : { session: this.own.session, scopes: { ...this.own.scopes, [scope]: data } };
+        ? { ...this.own, session: data }
+        : { ...this.own, scopes: { ...this.own.scopes, [scope]: data } };
+    return this.writeOwn(next);
+  }
+
+  private writeOwn(next: SlotData, clockOnly = false): Promise<void> {
     const json = JSON.stringify(next);
 
     if (json === this.ownJson) {
@@ -587,8 +622,12 @@ export class MultiplayerSession {
     this.slotConfirmed = false;
     const promise = this.enqueue();
     this.requestSend();
-    this.rebuild();
-    this.notify();
+    if (clockOnly) {
+      this.sharedClock?.observe();
+    } else {
+      this.rebuild();
+      this.notify();
+    }
     return promise;
   }
 
@@ -632,6 +671,7 @@ export class MultiplayerSession {
       meta.left = [...this.ownLeft];
     }
     const payload: Record<string, unknown> = { [META_KEY]: meta, scopes: this.own.scopes };
+    if (this.own.clock !== undefined) payload.$clock = this.own.clock;
     if (this.own.session !== undefined) {
       payload.session = this.own.session;
     }
@@ -1027,7 +1067,10 @@ export class MultiplayerSession {
     // Echoes of our own writes and repeated calls change nothing
     if (dataChanged || groupChanged || presenceChanged || membersChanged) {
       this.rebuild();
+      this.sharedClock?.observe();
       this.notify();
+    } else {
+      this.sharedClock?.observe();
     }
     this.flushEvents();
   }
@@ -1078,6 +1121,7 @@ export class MultiplayerSession {
       this.announce();
     }
     this.rebuild();
+    this.sharedClock?.observe();
     this.notify();
     this.reportStatus();
     this.flushEvents();
@@ -1088,6 +1132,7 @@ export class MultiplayerSession {
       return;
     }
     this.hasBeenAway = true;
+    this.sharedClock?.invalidate("resumed");
     this.announce();
   }
 
@@ -1345,6 +1390,7 @@ export class MultiplayerSession {
     if (!this.closing) {
       const lost = reason.code === "connection_lost";
       this.currentStatus = "closed";
+      this.sharedClock?.close();
       this.closeReason = reason;
       this.clearAwayTimers();
       this.clearReconnectTimer();

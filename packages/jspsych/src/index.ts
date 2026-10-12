@@ -67,6 +67,11 @@ export { ParameterType } from "./modules/plugins";
 export type { JsPsychExtension, JsPsychExtensionInfo } from "./modules/extensions";
 export { DataCollection } from "./modules/data/DataCollection";
 export type {
+  ClockReference,
+  ClockStatus,
+  ClockReadyOptions,
+  ClockDiagnostic,
+  ClockAPI,
   AdapterConnectOptions,
   ConnectionStatus,
   ConnectOptions,
@@ -85,3 +90,4 @@ export type {
   WaitOptions,
 } from "./modules/multiplayer";
 export { MultiplayerError } from "./modules/multiplayer";
+export { MultiplayerClockError } from "./modules/multiplayer";

@@ -1,5 +1,6 @@
 import autoBind from "auto-bind";
 
+import type { ClockAPI } from "./clock";
 import { MultiplayerError } from "./errors";
 import {
   MultiplayerSession,
@@ -19,6 +20,14 @@ import {
 } from "./types";
 
 export * from "./errors";
+export { MultiplayerClockError } from "./clock";
+export type {
+  ClockAPI,
+  ClockReference,
+  ClockStatus,
+  ClockReadyOptions,
+  ClockDiagnostic,
+} from "./clock";
 export * from "./types";
 export { DEFAULT_DROPOUT_TIMEOUT, PROTOCOL_VERSION } from "./session";
 export type { SessionListener } from "./session";
@@ -89,6 +98,15 @@ interface ConnectAttempt {
  * it, so plugins can call jsPsych.multiplayer.update() and so on without holding a session.
  */
 export class MultiplayerAPI {
+  /** Experimental fixed participant reference; requires a sealed group. */
+  get clock(): ClockAPI {
+    return this.readable().clock;
+  }
+
+  /** Milliseconds on the calibrated reference's monotonic axis, not Unix epoch time. */
+  now(options?: { allowDegraded?: boolean }): number {
+    return this.readable().clock.now(options);
+  }
   /** The latest session, open or closed. Closed sessions still answer reads. */
   private session: MultiplayerSession | null = null;
   private connecting: ConnectAttempt | null = null;

@@ -19,6 +19,11 @@ The `async` function lets this code run in an ordinary `<script>` tag; top-level
 
 ## How it works
 
+This prototype branch also exposes experimental `clock.ready()`, `clock.status()`,
+`clock.diagnostics()`, and `now()`. See the [clock acceptance record](../multiplayer-clock-acceptance.md)
+and [API, results, and deployment handoff](../multiplayer-clock-results.md). The clock
+requires a sealed group and calibration; its timestamps are not Unix epoch time.
+
 ### Sessions
 
 `connect()` opens a *session*: one connection to the backend. `jsPsych.multiplayer` passes every method call to the current session, so plugins can call `jsPsych.multiplayer.update()` without holding a reference to the session. Work still in progress when a session closes stays with that session and cannot affect a later one.
