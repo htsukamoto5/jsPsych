@@ -1,5 +1,10 @@
 # Shared-clock prototype results and handoff
 
+The real JATOS gate has now been attempted and **failed its uncertainty criterion**
+in two groups, despite successful import/runtime pairing and verified deployed assets.
+See [real JATOS measurements and limitations](multiplayer-clock-jatos-validation.md).
+The earlier unverified-deployment statements below retain the initial packet's context.
+
 The prototype is on `prototype/shared-clock-3694`, based on the fetched live
 PR #3694 head `1c3623b9133eb10ab011584545333276e8e509e4`. The initial worktree was
 clean. [Acceptance record](multiplayer-clock-acceptance.md) was written before coding.

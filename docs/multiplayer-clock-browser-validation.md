@@ -1,5 +1,10 @@
 # Shared-clock browser validation and deployment gate
 
+Real JATOS follow-up is now measured: import/pairing and deployed asset identity
+passed, but calibration quality failed in two independent groups. See the
+[real JATOS report](multiplayer-clock-jatos-validation.md). The access-unavailable
+section below describes the earlier local-browser packet, not the current gate status.
+
 This is a separate prototype review packet on `prototype/shared-clock-3694`.
 The plan, acceptance record, core clock/session code, JATOS adapter source, and
 disposable demo were reviewed before this follow-up. Hawkins integration,
