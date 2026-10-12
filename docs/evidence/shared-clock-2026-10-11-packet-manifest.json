@@ -1,0 +1,47 @@
+{
+  "generatedAtUtc": "2026-10-12T02:26:57.987Z",
+  "sources": {
+    "jspsych": {
+      "commit": "e7ca9a9da931c910462323effc0f983a02d66264",
+      "branch": "prototype/shared-clock-3694"
+    },
+    "multiplayer": {
+      "commit": "e5a8ac9c8a97d3bc4bde4cdd29c335aac9512f9a",
+      "branch": "main"
+    }
+  },
+  "environment": {
+    "node": "v24.13.0",
+    "platform": "win32",
+    "typescript": "5.7.3"
+  },
+  "policy": {
+    "defaultMaxSampleAgeMs": 30000,
+    "explicitLongRoundMaxSampleAgeMs": 75000,
+    "maxUncertaintyMs": 50,
+    "modeledRelativeDriftPpm": 200,
+    "calibrationTimeoutMs": 10000,
+    "samples": 5,
+    "attempts": 8
+  },
+  "inputSha256": {
+    "packages/adapter-multiplayer-jatos/src/index.ts": "294913d36f7c0b76eae01f59238ea686c382778248e114cf9f66ef521cbeae9e",
+    "packages/utils/src/index.ts": "7a854e9c1440c48a442d748209509cc53a5350f9cc9873e9f0321f92690a0645",
+    "packages/adapter-multiplayer-jatos/src/sealed-key.ts": "45d13827e1aa9e2129334cefbac695639393ac35eae0407ad7556122f338d3b6"
+  },
+  "assetSha256": {
+    "jspsych.js": "8d5143c6ff48cf9fbdaa67b9be2165be16ceb71b8e2cec8e607eddb5a41895f1",
+    "index.html": "8bc342b273d8c8b28198a3d6d86b0779a9871120961872c462e661a1896ac7a2",
+    "multiplayer-clock.js": "d36bbc15b7fa609d985db2275fcab6fcfdbb22674be8f547c653a619f9b8b920",
+    "multiplayer-clock-schedule.js": "850c2d044c8f983d71d1a1bf3f42f1f06ef323c1b5a927f98e2eb417308488bc",
+    "adapter-multiplayer-jatos.js": "5fd3e3498e822fdba3cbdfacfc489fb531b5110afd734256e0f7948d5b4f0544"
+  },
+  "metadataSha256": "ec190c4a6b2aaa789428bb4e1eeaa1dde902a3b3f5ab4b916a4ae0c50e9e309a",
+  "validation": {
+    "realJatos": "pending",
+    "twoMachine": "pending",
+    "physicalDisplayOnset": "not measured"
+  },
+  "archive": "shared-clock-prototype.jzip",
+  "archiveSha256": "8718c4b4b4d4b9cc9b79c9775d33c313ae4bab1f9461ac4fb8c5deae4e96eeeb"
+}
